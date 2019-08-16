@@ -25,16 +25,22 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
     def __init__(self, settings, user_agent='Scrapy'):
         super(RandomUserAgentMiddleware, self).__init__()
         self.user_agent = user_agent
-        user_agent_list_file = settings.get('USER_AGENT_LIST')
-        if not user_agent_list_file:
+        user_agent_list_source = settings.get('USER_AGENT_LIST')
+        if not user_agent_list_source:
             # If USER_AGENT_LIST_FILE settings is not set,
             # Use the default USER_AGENT or whatever was
             # passed to the middleware.
             ua = settings.get('USER_AGENT', user_agent)
             self.user_agent_list = [ua]
         else:
-            with open(user_agent_list_file, 'r') as f:
-                self.user_agent_list = [line.strip() for line in f.readlines()]
+            if any(isinstance(user_agent_list_source, t) for t in [list, tuple]):
+                self.user_agent_list = user_agent_list_source
+            elif callable(user_agent_list_source):
+                self.user_agent_list = user_agent_list_source()
+            else:
+                with open(user_agent_list_source, 'r') as f:
+                    self.user_agent_list = [line.strip()
+                                            for line in f.readlines()]
 
     @classmethod
     def from_crawler(cls, crawler):
